@@ -101,14 +101,17 @@ def correctTimeZone():
         error_log(er)
 
 
-@bot.message_handler(commands=['db'])
+@bot.message_handler(commands=['users'])
 def handler_db(message):
+    sql_request = "COPY (SELECT * FROM users) TO STDOUT WITH CSV HEADER"
     if isAdmin(message.from_user.id):
-        create_tables()
         connect, cursor = db_connect()
-        cursor.execute("SELECT * FROM users")
-        for i in cursor.fetchall():
-            print(i)
+        with open("temp/users.csv", "w") as output_file:
+            cursor.copy_expert(sql_request, output_file)
+        with open("temp/users.csv", "rb") as doc:
+            bot.send_document(chat_id=message.from_user.id, data=doc)
+        os.remove("temp/users.csv")
+        connect.commit()
         cursor.close()
         connect.close()
 
@@ -246,9 +249,7 @@ def set_group(message, user_id, group):
         try:
             group_list.pop(group_list.index(user_id))
         except Exception as er:
-            if "is not in list" in str(er):
-                pass
-            else:
+            if "is not in list" not in str(er):
                 error_log(er)
     except Exception as er:
         error_log(er)
@@ -347,10 +348,11 @@ def handler_text(message):
                     else:
                         bot.send_message(user_id, f"{sm}<b>Пар не обнаружено</b>", parse_mode="HTML")
                 except Exception as er:
-                    error_log(er)
                     if "line 1 column 1" in str(er):
                         text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
+                    else:
+                        error_log(er)
             elif "tomorrow" in message.text.lower() or commands[1] in message.text.lower():
                 try:
                     schedule = get_schedule("tomorrow", group, "<b>Пары завтра:\n</b>")
@@ -359,14 +361,15 @@ def handler_text(message):
                     else:
                         bot.send_message(user_id, f"{sm}<b>Пар не обнаружено</b>", parse_mode="HTML")
                 except Exception as er:
-                    error_log(er)
                     if "line 1 column 1" in str(er):
                         text = "Сегодня воскресенье" if day == 5 else "Не удается связаться с API"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
-            elif "week" in message.text.lower() or commands[2] in message.text.lower():
-                get_week_schedule(user_id, "week", group)
+                    else:
+                        error_log(er)
             elif "next_week" in message.text.lower():
                 get_week_schedule(user_id, "next_week", group)
+            elif "week" in message.text.lower() or commands[2] in message.text.lower():
+                get_week_schedule(user_id, "week", group)
         else:
             if message.chat.type == "private":
                 bot.send_message(message.from_user.id, f"{sm}<b>Я вас не понял</b>", parse_mode="HTML")
