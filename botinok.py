@@ -256,6 +256,19 @@ def set_group(message, user_id, group):
         bot.send_message(user_id, f"{sm}А ой, ошиб04ка")
 
 
+@bot.message_handler(commands=['which_week'])
+def get_week(message):
+    try:
+        week = int(datetime.now().strftime("%V"))
+        if week < 39:
+            week -= 5
+        else:
+            week -= 38
+        bot.send_message(message.from_user.id, f"<b>{week}</b> неделя", parse_mode="HTML")
+    except Exception as er:
+        error_log(er)
+
+
 def get_schedule(day, group, title):
     res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{day}")
     lessons = res.json()
@@ -309,6 +322,7 @@ def get_week_schedule(user_id, week, group):
 @bot.message_handler(content_types=['text'])
 def handler_text(message):
     print(f"{message.from_user.id} {message.from_user.username} {message.text}")
+    group = ""
     try:
         if message.from_user.id in group_list:
             if "/" in message.text or message.text in commands:
@@ -326,13 +340,11 @@ def handler_text(message):
                     group = cursor.fetchone()[0]
                     cursor.close()
                     connect.close()
+                except TypeError:
+                    bot.send_message(user_id, f"{sm}У вас не указана группа\n{text}, чтобы указать группу")
+                    return
                 except Exception as er:
                     error_log(er)
-                    bot.send_message(user_id, f"{sm}У вас не указана группа\n{text}, чтобы указать группу")
-                    return
-                if group.lower() == "none" or group.lower() is None:
-                    bot.send_message(user_id, f"{sm}У вас не указана группа\n{text}, чтобы указать группу")
-                    return
             except Exception as er:
                 error_log(er)
                 try:
@@ -370,6 +382,8 @@ def handler_text(message):
                 get_week_schedule(user_id, "next_week", group)
             elif "week" in message.text.lower() or commands[2] in message.text.lower():
                 get_week_schedule(user_id, "week", group)
+        elif "week" in message.text.lower() or "неделя" in message.text.lower():
+            get_week(message)
         else:
             if message.chat.type == "private":
                 bot.send_message(message.from_user.id, f"{sm}<b>Я вас не понял</b>", parse_mode="HTML")
