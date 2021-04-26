@@ -140,6 +140,11 @@ def handler_errors(message):
         error_log(er)
 
 
+@bot.message_handler(commands=['help'])
+def handler_help(message):
+    pass
+
+
 @bot.message_handler(commands=['start'])
 def handler_start(message):
     user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
@@ -151,7 +156,9 @@ def handler_start(message):
                f"/group (+группа если бот в беседе)- установить/изменить группу\n" \
                f"/today - расписание на сегодня\n" \
                f"/tomorrow - расписание на завтра\n" \
-               f"/week - расписание на неделю"
+               f"/week - расписание на неделю\n" \
+               f"/next_week - расписание на следующую неделю\n" \
+               f"/weeknum номер недели - получить расписание на неделю по ее номеру"
         if message.chat.type == "private":
             bot.send_message(message.from_user.id, text, reply_markup=user_markup, parse_mode="HTML",
                              disable_web_page_preview=True)
@@ -259,12 +266,12 @@ def set_group(message, user_id, group):
 @bot.message_handler(commands=['which_week'])
 def get_week(message):
     try:
-        week = int(datetime.now().strftime("%V"))
+        week = int((datetime.now() + timedelta(hours=time_difference)).strftime("%V"))
         if week < 39:
             week -= 5
         else:
             week -= 38
-        bot.send_message(message.from_user.id, f"<b>{week}</b> неделя", parse_mode="HTML")
+        bot.send_message(message.chat.id, f"<b>{week}</b> неделя", parse_mode="HTML")
     except Exception as er:
         error_log(er)
 
@@ -380,6 +387,13 @@ def handler_text(message):
                         error_log(er)
             elif "next_week" in message.text.lower():
                 get_week_schedule(user_id, "next_week", group)
+            elif "weeknum" in message.text.lower():
+                try:
+                    week = int(message.text.split()[1])
+                    get_week_schedule(user_id, f"{week}/week_num", group)
+                except Exception as er:
+                    error_log(er)
+                    bot.send_message(user_id, f"{sm}<b>Неверный ввод</b>", parse_mode="HTML")
             elif "week" in message.text.lower() or commands[2] in message.text.lower():
                 get_week_schedule(user_id, "week", group)
         elif "week" in message.text.lower() or "неделя" in message.text.lower():
