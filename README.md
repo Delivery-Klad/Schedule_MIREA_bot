@@ -8,12 +8,13 @@
 | requests         | 2.25.1  |
 
 ***
-### Heroku variables:
+### Variables:
 | Variable      | Value                   |
 |---------------|-------------------------|
 | TOKEN         | Telegram bot token      |
 | DB            | Database name           |
 | DB_user       | Database user           |
 | DB_pass       | Database user password  |
+| DB_host       | Database host           |
 
 <img  width=100% src="images/500.jpg">
