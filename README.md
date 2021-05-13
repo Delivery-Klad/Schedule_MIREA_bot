@@ -14,6 +14,7 @@
 | TOKEN         | Telegram bot token      |
 | DB            | Database name           |
 | DB_user       | Database user           |
+| DB_port       | Database port           |
 | DB_pass       | Database user password  |
 | DB_host       | Database host           |
 
