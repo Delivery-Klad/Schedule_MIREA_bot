@@ -23,6 +23,7 @@ lesson_dict = {"9:": "1", "10": "2", "12": "3", "14": "4", "16": "5", "18": "6",
 time_dict = {"9:": "🕘", "10": "🕦", "12": "🕐", "14": "🕝", "16": "🕟", "18": "🕕", "19": "🕢", "20": "🕘"}
 delimiter = "------------------------------------------------"
 time_difference = 3
+response = ""
 print(bot.get_me())
 
 
@@ -36,10 +37,10 @@ def isAdmin(user_id):
 def db_connect():  # функция подключения к первой базе данных
     try:
         con = psycopg2.connect(
-            host="ec2-52-203-27-62.compute-1.amazonaws.com",
+            host=str(os.environ.get('DB_host')),
             database=str(os.environ.get('DB')),
             user=str(os.environ.get('DB_user')),
-            port="5432",
+            port=str(os.environ.get('DB_port')),
             password=str(os.environ.get('DB_pass'))
         )
         cur = con.cursor()
@@ -68,7 +69,12 @@ def error_log(er):
         filename = frame.f_code.co_filename
         linecache.checkcache(filename)
         line = linecache.getline(filename, linenos, frame.f_globals)
-        reason = f"EXCEPTION IN ({filename}, LINE {linenos} '{line.strip()}'): {exc_obj}"
+        time = datetime.now() + timedelta(hours=3)
+        if "line 1 column 1" in str(er):
+            global response
+            reason = f"{time} EXCEPTION IN ({filename}, LINE {linenos} '{line.strip()}'): {str(response)}"
+        else:
+            reason = f"{time} EXCEPTION IN ({filename}, LINE {linenos} '{line.strip()}'): {exc_obj}"
         connect, cursor = db_connect()
         temp_date = correctTimeZone()
         cursor.execute(f"INSERT INTO Errors VALUES($taG${reason}$taG$)")
@@ -277,7 +283,9 @@ def get_week(message):
 
 
 def get_schedule(day, group, title):
+    global response
     res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{day}")
+    response = res
     lessons = res.json()
     schedule = title
     for i in lessons:
@@ -294,7 +302,9 @@ def get_schedule(day, group, title):
 
 
 def get_week_schedule(user_id, week, group):
+    global response
     res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{week}")
+    response = str(res)
     lessons = res.json()
     rez, days = "", []
     try:
@@ -370,8 +380,7 @@ def handler_text(message):
                     if "line 1 column 1" in str(er):
                         text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
-                    else:
-                        error_log(er)
+                    error_log(er)
             elif "tomorrow" in message.text.lower() or commands[1] in message.text.lower():
                 try:
                     schedule = get_schedule("tomorrow", group, "<b>Пары завтра:\n</b>")
@@ -383,19 +392,34 @@ def handler_text(message):
                     if "line 1 column 1" in str(er):
                         text = "Сегодня воскресенье" if day == 5 else "Не удается связаться с API"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
-                    else:
-                        error_log(er)
+                    error_log(er)
             elif "next_week" in message.text.lower():
-                get_week_schedule(user_id, "next_week", group)
+                try:
+                    get_week_schedule(user_id, "next_week", group)
+                except Exception as er:
+                    if "line 1 column 1" in str(er):
+                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
+                        bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
+                    error_log(er)
             elif "weeknum" in message.text.lower():
                 try:
                     week = int(message.text.split()[1])
                     get_week_schedule(user_id, f"{week}/week_num", group)
                 except Exception as er:
+                    if "line 1 column 1" in str(er):
+                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
+                        bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
+                    else:
+                        bot.send_message(user_id, f"{sm}<b>Неверный ввод</b>", parse_mode="HTML")
                     error_log(er)
-                    bot.send_message(user_id, f"{sm}<b>Неверный ввод</b>", parse_mode="HTML")
             elif "week" in message.text.lower() or commands[2] in message.text.lower():
-                get_week_schedule(user_id, "week", group)
+                try:
+                    get_week_schedule(user_id, "week", group)
+                except Exception as er:
+                    if "line 1 column 1" in str(er):
+                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
+                        bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
+                    error_log(er)
         elif "week" in message.text.lower() or "неделя" in message.text.lower():
             get_week(message)
         else:
