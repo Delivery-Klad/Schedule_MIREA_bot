@@ -11,7 +11,7 @@ variables:
   imageTags: |
     $(Build.BuildId)
     latest
-  proxyServiceName: olympiad_proxy
+  proxyServiceName: schedule-rtu_bot
 
 stages:
 - stage: build
@@ -29,32 +29,32 @@ stages:
             Dockerfile: './Dockerfile'
             buildContext: './'
             tags: ${{variables.imageTags}}
-# - stage: deploy
-#   condition: and(succeeded(), ${{variables.deployService}})
-#   jobs:
-#     - deployment: DeployBot
-#       displayName: Deploy bot
-#       pool:
-#         vmImage: 'ubuntu-latest'
-#       environment: ${{variables.deployEnvironment}}
-#       strategy:
-#         runOnce:
-#           on:
-#             failure:
-#               steps:
-#                 - download: none
-#                 - task: SSH@0
-#                   inputs:
-#                     sshEndpoint: 'swarm manager'
-#                     runOptions: 'commands'
-#                     commands: 'docker service rollback ${{variables.proxyServiceName}}'
-#                     readyTimeout: '20000'
-#           deploy:
-#             steps:
-#               - download: none
-#               - task: SSH@0
-#                 inputs:
-#                   sshEndpoint: 'swarm manager'
-#                   runOptions: 'commands'
-#                   commands: 'docker service update --image ${{variables.imageName}}:$(Build.BuildId) ${{variables.proxyServiceName}}'
-#                   readyTimeout: '20000'
+- stage: deploy
+  condition: and(succeeded(), ${{variables.deployService}})
+  jobs:
+    - deployment: DeployBot
+      displayName: Deploy bot
+      pool:
+        vmImage: 'ubuntu-latest'
+      environment: ${{variables.deployEnvironment}}
+      strategy:
+        runOnce:
+          on:
+            failure:
+              steps:
+                - download: none
+                - task: SSH@0
+                  inputs:
+                    sshEndpoint: 'swarm manager'
+                    runOptions: 'commands'
+                    commands: 'docker service rollback ${{variables.proxyServiceName}}'
+                    readyTimeout: '20000'
+          deploy:
+            steps:
+              - download: none
+              - task: SSH@0
+                inputs:
+                  sshEndpoint: 'swarm manager'
+                  runOptions: 'commands'
+                  commands: 'docker service update --image ${{variables.imageName}}:$(Build.BuildId) ${{variables.proxyServiceName}}'
+                  readyTimeout: '20000'
