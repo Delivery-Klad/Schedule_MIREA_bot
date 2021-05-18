@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  bot:
+    environment: 
+      DB: ${DB_NAME?Pass dbname DB_NAME}
+      DB_host: ${DB_HOST?Pass db host DB_HOST}
+      DB_port: ${DB_PORT?Pass db port DB_PORT}
+      DB_user: ${DB_USER?Pass db user DB_USER}
+      DB_pass: ${DB_PASSWORD?Pass db password DB_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 100M
+        reservations:
+          cpus: '0.05'
+          memory: 50M
+    logging:
+      driver: "json-file"
+      options:
+          max-size: "200k"
+          max-file: "10"
