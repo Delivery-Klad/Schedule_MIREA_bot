@@ -1,4 +1,5 @@
 # [RTU MIREA schedule bot](https://t.me/schedule_memrea_bot)
+[![Build Status](https://dev.azure.com/rtuitlab/RTU%20IT%20Lab/_apis/build/status/Schedule-RTU/Schedule-RTU-Bot?branchName=main)](https://dev.azure.com/rtuitlab/RTU%20IT%20Lab/_build/latest?definitionId=166&branchName=main)
 ***
 ### Requirements:
 | Library          | Version |

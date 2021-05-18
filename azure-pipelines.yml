@@ -56,5 +56,5 @@ stages:
                 inputs:
                   sshEndpoint: 'swarm manager'
                   runOptions: 'commands'
-                  commands: 'docker service update --image ${{variables.imageName}}:$(Build.BuildId) ${{variables.proxyServiceName}}'
+                  commands: 'docker service update --image ${{variables.imageName}}:$(Build.BuildId) ${{variables.proxyServiceName}} --with-registry-auth'
                   readyTimeout: '20000'
