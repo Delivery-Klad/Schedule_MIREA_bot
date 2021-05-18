@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  bot:
+    image: rtuitlab/schedule-rtu-bot
+    environment: 
+      TOKEN: ${TELEGRAM_BOT_TOKEN?Pass telegram bot token TELEGRAM_BOT_TOKEN}

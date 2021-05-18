@@ -1,0 +1,60 @@
+pool:
+  vmImage: 'ubuntu-latest'
+
+name: $(BuildID)-$(Build.SourceBranchName)
+
+variables:
+  buildImage: true
+  deployService: true
+  deployEnvironment: production
+  imageName: 'rtuitlab/schedule-rtu-bot'
+  imageTags: |
+    $(Build.BuildId)
+    latest
+  proxyServiceName: olympiad_proxy
+
+stages:
+- stage: build
+  condition: and(succeeded(), ${{variables.buildImage}})
+  jobs:
+    - job: packApi
+      displayName: Pack docker image
+      steps:
+        - task: Docker@2
+          displayName: buildAndPush
+          inputs:
+            containerRegistry: 'rtuitlab connection by admin'
+            repository: ${{variables.imageName}}
+            command: 'buildAndPush'
+            Dockerfile: './Dockerfile'
+            buildContext: './'
+            tags: ${{variables.imageTags}}
+# - stage: deploy
+#   condition: and(succeeded(), ${{variables.deployService}})
+#   jobs:
+#     - deployment: DeployBot
+#       displayName: Deploy bot
+#       pool:
+#         vmImage: 'ubuntu-latest'
+#       environment: ${{variables.deployEnvironment}}
+#       strategy:
+#         runOnce:
+#           on:
+#             failure:
+#               steps:
+#                 - download: none
+#                 - task: SSH@0
+#                   inputs:
+#                     sshEndpoint: 'swarm manager'
+#                     runOptions: 'commands'
+#                     commands: 'docker service rollback ${{variables.proxyServiceName}}'
+#                     readyTimeout: '20000'
+#           deploy:
+#             steps:
+#               - download: none
+#               - task: SSH@0
+#                 inputs:
+#                   sshEndpoint: 'swarm manager'
+#                   runOptions: 'commands'
+#                   commands: 'docker service update --image ${{variables.imageName}}:$(Build.BuildId) ${{variables.proxyServiceName}}'
+#                   readyTimeout: '20000'

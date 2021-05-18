@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  bot:
+    build: '.'
+    environment:
+      DB: shcedule_rtu_db
+      DB_user: postgres
+      DB_pass: password
+      DB_host: db
+      DB_port: '5432'
+    depends_on: 
+      - db
+    restart: on-failure
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shcedule_rtu_db
