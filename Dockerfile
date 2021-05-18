@@ -7,4 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . ./
 
-CMD python botinok.py
+CMD python -u botinok.py
