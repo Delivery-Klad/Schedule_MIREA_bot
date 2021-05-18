@@ -4,14 +4,22 @@ pool:
 name: $(BuildID)-$(Build.SourceBranchName)
 
 variables:
-  buildImage: true
-  deployService: true
-  deployEnvironment: production
-  imageName: 'rtuitlab/schedule-rtu-bot'
-  imageTags: |
-    $(Build.BuildId)
-    latest
-  proxyServiceName: schedule-rtu_bot
+  ${{ if notIn(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+    buildImage: false
+    deployService: false
+    deployEnvironment: 'none'
+    imageName: 'none'
+    imageTags: 'none'
+    proxyServiceName: schedule-rtu_bot
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+    buildImage: true
+    deployService: true
+    deployEnvironment: production
+    imageName: 'rtuitlab/schedule-rtu-bot'
+    imageTags: |
+      $(Build.BuildId)
+      latest
+    proxyServiceName: schedule-rtu_bot
 
 stages:
 - stage: build
