@@ -7,6 +7,28 @@ import sys
 from datetime import datetime, timedelta
 
 
+def validator():
+    if os.environ.get('TOKEN') is None:
+        print("Не найдена переменная 'TOKEN'. Завершение работы...")
+        exit(0)
+    if os.environ.get('DB_host') is None:
+        print("Не найдена переменная 'DB_host'. Завершение работы...")
+        exit(0)
+    if os.environ.get('DB') is None:
+        print("Не найдена переменная 'DB'. Завершение работы...")
+        exit(0)
+    if os.environ.get('DB_user') is None:
+        print("Не найдена переменная 'DB_user'. Завершение работы...")
+        exit(0)
+    if os.environ.get('DB_port') is None:
+        print("Не найдена переменная 'DB_port'. Завершение работы...")
+        exit(0)
+    if os.environ.get('DB_pass') is None:
+        print("Не найдена переменная 'DB_pass'. Завершение работы...")
+        exit(0)
+
+
+validator()
 bot = telebot.TeleBot(str(os.environ.get('TOKEN')))
 sm = "🤖"
 group_list = []
@@ -50,13 +72,17 @@ def db_connect():  # функция подключения к первой ба�
 
 
 def create_tables():
-    connect, cursor = db_connect()
-    cursor.execute("CREATE TABLE IF NOT EXISTS users(username TEXT, first_name TEXT,"
-                   "last_name TEXT, grp TEXT, ids BIGINT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS errors(reason TEXT)")
-    connect.commit()
-    cursor.close()
-    connect.close()
+    try:
+        connect, cursor = db_connect()
+        cursor.execute("CREATE TABLE IF NOT EXISTS users(username TEXT, first_name TEXT,"
+                       "last_name TEXT, grp TEXT, ids BIGINT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS errors(reason TEXT)")
+        connect.commit()
+        cursor.close()
+        connect.close()
+        print("Таблицы успешно созданы")
+    except Exception as er:
+        print(er)
 
 
 def error_log(er):
@@ -430,6 +456,7 @@ def handler_text(message):
 
 
 create_tables()
+print("Бот запущен!")
 try:
     while True:
         try:
