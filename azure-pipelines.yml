@@ -4,14 +4,14 @@ pool:
 name: $(BuildID)-$(Build.SourceBranchName)
 
 variables:
-  ${{ if notIn(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+  ${{ if notIn(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     buildImage: false
     deployService: false
     deployEnvironment: 'none'
     imageName: 'none'
     imageTags: 'none'
     proxyServiceName: schedule-rtu_bot
-  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     buildImage: true
     deployService: true
     deployEnvironment: production
