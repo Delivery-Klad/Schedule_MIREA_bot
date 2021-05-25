@@ -4,6 +4,10 @@ import psycopg2
 import os
 import linecache
 import sys
+import json
+import time
+import schedule
+from threading import Thread
 from datetime import datetime, timedelta
 
 
@@ -233,6 +237,28 @@ def handler_group(message):
             error_log(err)
 
 
+def cache():
+    try:
+        os.mkdir("cache")
+    except FileExistsError:
+        pass
+    try:
+        con, cur = db_connect()
+        cur.execute("SELECT DISTINCT grp FROM users")
+        for i in cur.fetchall():
+            res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{i[0]}/week")
+            if res.status_code == 503:
+                print(f"Caching failed {res} Group '{i[0]}'")
+            else:
+                lessons = res.json()
+                with open(f"cache/{i[0]}.json", "w") as file:
+                    json.dump(lessons, file)
+                time.sleep(0.1)
+        bot.send_message(admins_list[0], "Caching success!")
+    except Exception as er:
+        error_log(er)
+
+
 def sort_days(days):
     temp, day = [], ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     for i in days:
@@ -329,9 +355,23 @@ def get_schedule(day, group, title):
 
 def get_week_schedule(user_id, week, group):
     global response
+    day = datetime.today().weekday()
     res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{week}")
     response = str(res)
-    lessons = res.json()
+    try:
+        lessons = res.json()
+    except Exception as er:
+        if "line 1 column 1" in str(er):
+            text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API\nПроверяю кэшированное расписание"
+            bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
+    if res.status_code == 503:
+        try:
+            print(f"Поиск кэшированного расписания для группы '{group}'")
+            with open(f"cache/{group}.json") as file:
+                lessons = json.load(file)
+        except FileNotFoundError:
+            bot.send_message(user_id, f"{sm}Кэшированое расписание для вашей группы не найдено")
+            return
     rez, days = "", []
     try:
         for i in lessons:
@@ -404,7 +444,9 @@ def handler_text(message):
                         bot.send_message(user_id, f"{sm}<b>Пар не обнаружено</b>", parse_mode="HTML")
                 except Exception as er:
                     if "line 1 column 1" in str(er):
-                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
+                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API\n/week - чтобы " \
+                                                                      "посмотреть кэшированное расписание на " \
+                                                                      "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
             elif "tomorrow" in message.text.lower() or commands[1] in message.text.lower():
@@ -416,7 +458,9 @@ def handler_text(message):
                         bot.send_message(user_id, f"{sm}<b>Пар не обнаружено</b>", parse_mode="HTML")
                 except Exception as er:
                     if "line 1 column 1" in str(er):
-                        text = "Сегодня воскресенье" if day == 5 else "Не удается связаться с API"
+                        text = "Сегодня воскресенье" if day == 5 else "Не удается связаться с API\n/week - чтобы " \
+                                                                      "посмотреть кэшированное расписание на " \
+                                                                      "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
             elif "next_week" in message.text.lower():
@@ -424,7 +468,9 @@ def handler_text(message):
                     get_week_schedule(user_id, "next_week", group)
                 except Exception as er:
                     if "line 1 column 1" in str(er):
-                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
+                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API\n/week - чтобы " \
+                                                                      "посмотреть кэшированное расписание на " \
+                                                                      "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
             elif "weeknum" in message.text.lower():
@@ -433,7 +479,9 @@ def handler_text(message):
                     get_week_schedule(user_id, f"{week}/week_num", group)
                 except Exception as er:
                     if "line 1 column 1" in str(er):
-                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
+                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API\n/week - чтобы " \
+                                                                      "посмотреть кэшированное расписание на " \
+                                                                      "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     else:
                         bot.send_message(user_id, f"{sm}<b>Неверный ввод</b>", parse_mode="HTML")
@@ -442,9 +490,6 @@ def handler_text(message):
                 try:
                     get_week_schedule(user_id, "week", group)
                 except Exception as er:
-                    if "line 1 column 1" in str(er):
-                        text = "Сегодня воскресенье" if day == 6 else "Не удается связаться с API"
-                        bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
         elif "week" in message.text.lower() or "неделя" in message.text.lower():
             get_week(message)
@@ -455,7 +500,17 @@ def handler_text(message):
         error_log(er)
 
 
+def create_thread():
+    while True:
+        schedule.run_pending()
+
+
 create_tables()
+cache()
+schedule.every().day.at("23:45").do(cache)
+cache_thread = Thread(target=create_thread)
+print("Расписание кэширования создано!")
+cache_thread.start()
 print("Бот запущен!")
 try:
     while True:
