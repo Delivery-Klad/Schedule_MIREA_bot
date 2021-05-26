@@ -236,25 +236,32 @@ def handler_group(message):
         except Exception as err:
             error_log(err)
 
-
 def cache():
     try:
         os.mkdir("cache")
     except FileExistsError:
         pass
     try:
+        failed = 0
         con, cur = db_connect()
         cur.execute("SELECT DISTINCT grp FROM users")
-        for i in cur.fetchall():
+        grps = cur.fetchall()
+        for i in grps:
             res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{i[0]}/week")
             if res.status_code == 503:
+                failed += 1
                 print(f"Caching failed {res} Group '{i[0]}'")
             else:
                 lessons = res.json()
                 with open(f"cache/{i[0]}.json", "w") as file:
                     json.dump(lessons, file)
                 time.sleep(0.1)
-        bot.send_message(admins_list[0], "Caching success!")
+        bot.send_message(admins_list[0], f"Caching success! \n{failed}/{len(grps)} failed")
+        try:
+            with open("cache/ИКБО-08-18.json", "rb") as doc:
+                bot.send_document(admins_list[0], doc)
+        except Exception as er:
+            error_log(er)
     except Exception as er:
         error_log(er)
 
