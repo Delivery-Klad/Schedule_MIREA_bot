@@ -73,11 +73,15 @@ def db_connect():  # функция подключения к первой ба�
         return con, cur
     except Exception as er:
         print(er)
+        return None, None
 
 
 def create_tables():
     try:
         connect, cursor = db_connect()
+        if connect is None or cursor is None:
+            print("Я потерял БД, кто найдет оставьте на охране (не получилось создать таблицы)")
+            return
         cursor.execute("CREATE TABLE IF NOT EXISTS users(username TEXT, first_name TEXT,"
                        "last_name TEXT, grp TEXT, ids BIGINT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS errors(reason TEXT)")
@@ -137,26 +141,15 @@ def correctTimeZone():
         error_log(er)
 
 
-@bot.message_handler(commands=['debug'])
-def handler_debug(message):
-    if isAdmin(message.from_user.id):
-        try:
-            res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{week}")
-            bot.send_message(message.from_user.id, f"Response {res.status_code}")
-            os.mkdir("tmp")
-            with open("tmp/test.txt", "w") as file:
-                file.write("test")
-            with open("tmp/test.txt", "rb") as doc:
-                bot.send_document(chat_id=message.from_user.id, data=doc)
-        except Exception as er:
-            error_log(er)
-
-
 @bot.message_handler(commands=['users'])
 def handler_db(message):
     sql_request = "COPY (SELECT * FROM users) TO STDOUT WITH CSV HEADER"
     if isAdmin(message.from_user.id):
         connect, cursor = db_connect()
+        if connect is None or cursor is None:
+            bot.send_message(message.from_user.id, f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку "
+                                                   f"позже")
+            return
         with open("temp/users.csv", "w") as output_file:
             cursor.copy_expert(sql_request, output_file)
         with open("temp/users.csv", "rb") as doc:
@@ -173,6 +166,10 @@ def handler_errors(message):
         sql_request = "COPY (SELECT * FROM errors) TO STDOUT WITH CSV HEADER"
         if isAdmin(message.from_user.id):
             connect, cursor = db_connect()
+            if connect is None or cursor is None:
+                bot.send_message(message.from_user.id, f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите "
+                                                       f"попытку позже")
+                return
             with open("temp/errors.csv", "w") as output_file:
                 cursor.copy_expert(sql_request, output_file)
             with open("temp/errors.csv", "rb") as doc:
@@ -189,11 +186,6 @@ def handler_errors(message):
             connect.close()
     except Exception as er:
         error_log(er)
-
-
-@bot.message_handler(commands=['help'])
-def handler_help(message):
-    pass
 
 
 @bot.message_handler(commands=['start'])
@@ -260,6 +252,9 @@ def cache():
     try:
         failed = 0
         con, cur = db_connect()
+        if connect is None or cursor is None:
+            bot.send_message(admins_list[0], f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
+            return
         cur.execute("SELECT DISTINCT grp FROM users")
         grps = cur.fetchall()
         for i in grps:
@@ -321,6 +316,9 @@ def get_time_ico(time):
 def set_group(message, user_id, group):
     try:
         connect, cursor = db_connect()
+        if connect is None or cursor is None:
+            bot.send_message(user_id, f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
+            return
         cursor.execute(f"SELECT count(ids) FROM users WHERE ids={user_id}")
         res = cursor.fetchall()[0][0]
         if res == 0:
@@ -441,6 +439,10 @@ def handler_text(message):
             text = "/group" if message.chat.type == "private" else "/group (группа)"
             try:
                 connect, cursor = db_connect()
+                if connect is None or cursor is None:
+                    bot.send_message(admins_list[0],
+                                     f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
+                    return
                 cursor.execute(f"SELECT grp FROM users WHERE ids={user_id}")
                 try:
                     group = cursor.fetchone()[0]
