@@ -78,6 +78,7 @@ def db_connect():  # функция подключения к первой ба�
 
 def create_tables():
     try:
+        print("Создание таблиц начато")
         connect, cursor = db_connect()
         if connect is None or cursor is None:
             print("Я потерял БД, кто найдет оставьте на охране (не получилось создать таблицы)")
@@ -85,6 +86,8 @@ def create_tables():
         cursor.execute("CREATE TABLE IF NOT EXISTS users(username TEXT, first_name TEXT,"
                        "last_name TEXT, grp TEXT, ids BIGINT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS errors(reason TEXT)")
+        cursor.execute("SELECT COUNT(ids) FROM users")
+        print(f"Пользователей в базе {cursor.fetchone()[0]}")
         connect.commit()
         cursor.close()
         connect.close()
