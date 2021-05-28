@@ -137,6 +137,21 @@ def correctTimeZone():
         error_log(er)
 
 
+@bot.message_handler(commands=['debug'])
+def handler_debug(message):
+    if isAdmin(message.from_user.id):
+        try:
+            res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{week}")
+            bot.send_message(message.from_user.id, f"Response {res.status_code}")
+            os.mkdir("tmp")
+            with open("tmp/test.txt", "w") as file:
+                file.write("test")
+            with open("tmp/test.txt", "rb") as doc:
+                bot.send_document(chat_id=message.from_user.id, data=doc)
+        except Exception as er:
+            error_log(er)
+
+
 @bot.message_handler(commands=['users'])
 def handler_db(message):
     sql_request = "COPY (SELECT * FROM users) TO STDOUT WITH CSV HEADER"
@@ -235,6 +250,7 @@ def handler_group(message):
             bot.send_message(user_id, f"{sm}А ой, ошиб04ка")
         except Exception as err:
             error_log(err)
+
 
 def cache():
     try:
