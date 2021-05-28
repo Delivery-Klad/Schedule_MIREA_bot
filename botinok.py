@@ -251,12 +251,12 @@ def cache():
         pass
     try:
         failed = 0
-        con, cur = db_connect()
+        connect, cursor = db_connect()
         if connect is None or cursor is None:
             bot.send_message(admins_list[0], f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
             return
-        cur.execute("SELECT DISTINCT grp FROM users")
-        grps = cur.fetchall()
+        cursor.execute("SELECT DISTINCT grp FROM users")
+        grps = cursor.fetchall()
         for i in grps:
             res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{i[0]}/week")
             if res.status_code == 503:
