@@ -262,10 +262,11 @@ def cache():
         grps = cursor.fetchall()
         for i in grps:
             res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{i[0]}/week")
-            if res.status_code == 503:
+            if res.status_code != 200:
                 failed += 1
                 print(f"Caching failed {res} Group '{i[0]}'")
             else:
+                print(f"Caching success {res} Group '{i[0]}'")
                 lessons = res.json()
                 with open(f"cache/{i[0]}.json", "w") as file:
                     json.dump(lessons, file)
@@ -534,7 +535,8 @@ def create_thread():
 
 
 create_tables()
-cache()
+start_cache = Thread(target=cache)
+start_cache.start()
 schedule.every().day.at("23:45").do(cache)
 cache_thread = Thread(target=create_thread)
 print("Расписание кэширования создано!")
