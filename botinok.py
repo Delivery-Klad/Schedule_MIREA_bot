@@ -144,6 +144,19 @@ def correctTimeZone():
         error_log(er)
 
 
+@bot.message_handler(commands=['debug'])
+def handler_debug(message):
+    try:
+        if isAdmin(message.from_user.id):
+            os.mkdir("tmp")
+            with open("tmp/test.txt", "w") as file:
+                file.write("test")
+            with open("tmp/test.txt", "rb") as doc:
+                bot.send_document(message.from_user.id, doc)
+    except Exception as er:
+        error_log(er)
+
+
 @bot.message_handler(commands=['users'])
 def handler_db(message):
     sql_request = "COPY (SELECT * FROM users) TO STDOUT WITH CSV HEADER"
