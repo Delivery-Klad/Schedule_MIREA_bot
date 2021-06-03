@@ -78,7 +78,7 @@ def db_connect():  # функция подключения к первой ба�
 
 def create_tables():
     try:
-        print("Создание таблиц начато")
+        print("Создание таблиц...")
         connect, cursor = db_connect()
         if connect is None or cursor is None:
             print("Я потерял БД, кто найдет оставьте на охране (не получилось создать таблицы)")
@@ -163,8 +163,8 @@ def handler_db(message):
     if isAdmin(message.from_user.id):
         connect, cursor = db_connect()
         if connect is None or cursor is None:
-            bot.send_message(message.from_user.id, f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку "
-                                                   f"позже")
+            bot.send_message(message.from_user.id, f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите "
+                                                   f"попытку позже")
             return
         with open("temp/users.csv", "w") as output_file:
             cursor.copy_expert(sql_request, output_file)
@@ -261,12 +261,13 @@ def handler_group(message):
 
 
 def cache():
+    print("Caching schedule...")
+    failed, grps = 0, 0
     try:
         os.mkdir("cache")
     except FileExistsError:
         pass
     try:
-        failed = 0
         connect, cursor = db_connect()
         if connect is None or cursor is None:
             bot.send_message(admins_list[0], f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
@@ -292,6 +293,9 @@ def cache():
             error_log(er)
     except Exception as er:
         error_log(er)
+    if failed == len(grps):
+        time.sleep(3600)
+        cache()
 
 
 def sort_days(days):
