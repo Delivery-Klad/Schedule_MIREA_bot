@@ -33,7 +33,7 @@ def validator():
 
 
 validator()
-bot = telebot.TeleBot("1074352529:AAEIKKcGDpFtQt-7NNm0EYnxZiau9oARZAo")
+bot = telebot.TeleBot(str(os.environ.get('TOKEN')))
 sm = "🤖"
 group_list = []
 admins_list = [496537969]
