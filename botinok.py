@@ -33,7 +33,7 @@ def validator():
 
 
 validator()
-bot = telebot.TeleBot(str(os.environ.get('TOKEN')))
+bot = telebot.TeleBot("1074352529:AAEIKKcGDpFtQt-7NNm0EYnxZiau9oARZAo")
 sm = "🤖"
 group_list = []
 admins_list = [496537969]
@@ -54,20 +54,17 @@ print(bot.get_me())
 
 
 def isAdmin(user_id):
-    if user_id in admins_list:
-        return True
-    else:
-        return False
+    return True if user_id in admins_list else False
 
 
-def db_connect():  # функция подключения к первой базе данных
+def db_connect():
     try:
         con = psycopg2.connect(
-            host=str(os.environ.get('DB_host')),
-            database=str(os.environ.get('DB')),
-            user=str(os.environ.get('DB_user')),
-            port=str(os.environ.get('DB_port')),
-            password=str(os.environ.get('DB_pass'))
+            host="ec2-52-203-27-62.compute-1.amazonaws.com",
+            database="db62eo9863hsjs",
+            user="vsuxnhiqqiiwfy",
+            port="5432",
+            password="86498c5bcccc94d6c10b6fc89e13b786138b3575e1d7a9d8def1c873c50d7743"
         )
         cur = con.cursor()
         return con, cur
@@ -81,7 +78,7 @@ def create_tables():
         print("Создание таблиц...")
         connect, cursor = db_connect()
         if connect is None or cursor is None:
-            print("Я потерял БД, кто найдет оставьте на охране (не получилось создать таблицы)")
+            print("Я потерял БД, кто найдет оставьте на охране (не получилось подключиться к бд)")
             return
         cursor.execute("CREATE TABLE IF NOT EXISTS users(username TEXT, first_name TEXT,"
                        "last_name TEXT, grp TEXT, ids BIGINT)")
@@ -140,19 +137,6 @@ def correctTimeZone():
     try:
         curr_time = datetime.now() + timedelta(hours=time_difference)
         return str(curr_time.strftime("%d.%m.%Y %H:%M:%S"))
-    except Exception as er:
-        error_log(er)
-
-
-@bot.message_handler(commands=['debug'])
-def handler_debug(message):
-    try:
-        if isAdmin(message.from_user.id):
-            os.mkdir("tmp")
-            with open("tmp/test.txt", "w") as file:
-                file.write("test")
-            with open("tmp/test.txt", "rb") as doc:
-                bot.send_document(message.from_user.id, doc)
     except Exception as er:
         error_log(er)
 
@@ -262,7 +246,7 @@ def handler_group(message):
 
 def cache():
     print("Caching schedule...")
-    failed, grps = 0, 0
+    failed, local_groups = 0, 0
     try:
         os.mkdir("cache")
     except FileExistsError:
@@ -273,8 +257,8 @@ def cache():
             bot.send_message(admins_list[0], f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
             return
         cursor.execute("SELECT DISTINCT grp FROM users")
-        grps = cursor.fetchall()
-        for i in grps:
+        local_groups = cursor.fetchall()
+        for i in local_groups:
             res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{i[0]}/week")
             if res.status_code != 200:
                 failed += 1
@@ -285,7 +269,7 @@ def cache():
                 with open(f"cache/{i[0]}.json", "w") as file:
                     json.dump(lessons, file)
                 time.sleep(0.1)
-        bot.send_message(admins_list[0], f"Caching success! \n{failed}/{len(grps)} failed")
+        bot.send_message(admins_list[0], f"Caching success! \n{failed}/{len(local_groups)} failed")
         try:
             with open("cache/ИКБО-08-18.json", "rb") as doc:
                 bot.send_document(admins_list[0], doc)
@@ -293,7 +277,7 @@ def cache():
             error_log(er)
     except Exception as er:
         error_log(er)
-    if failed == len(grps):
+    if failed == len(local_groups):
         time.sleep(3600)
         cache()
 
@@ -317,7 +301,7 @@ def number_of_lesson(lsn):
         return "? пара"
 
 
-def get_teacher_ico(name):
+def get_teacher_icon(name):
     try:
         symbol = name.split(' ', 1)[0]
         return "👩‍🏫" if symbol[len(symbol) - 1] == "а" else "👨‍🏫"
@@ -325,10 +309,10 @@ def get_teacher_ico(name):
         return ""
 
 
-def get_time_ico(time):
+def get_time_icon(local_time):
     global time_dict
     try:
-        return time_dict[time[:2]]
+        return time_dict[local_time[:2]]
     except Exception as er:
         error_log(er)
         return "🕐"
@@ -381,18 +365,18 @@ def get_schedule(day, group, title):
     res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{group}/{day}")
     response = res
     lessons = res.json()
-    schedule = title
+    group_schedule = title
     for i in lessons:
         j, o = i['lesson'], i['time']
         try:
-            schedule += f"<b>{number_of_lesson(o['start'])} (<code>{j['classRoom']}</code>" \
-                   f"{get_time_ico(o['start'])}{o['start']} - {o['end']})</b>\n{j['name']} " \
-                   f"({j['type']})\n{get_teacher_ico(j['teacher'])} {j['teacher']}\n\n"
+            group_schedule += f"<b>{number_of_lesson(o['start'])} (<code>{j['classRoom']}</code>" \
+                              f"{get_time_icon(o['start'])}{o['start']} - {o['end']})</b>\n{j['name']} " \
+                              f"({j['type']})\n{get_teacher_icon(j['teacher'])} {j['teacher']}\n\n"
         except TypeError:
             pass
         except Exception as er:
             error_log(er)
-    return schedule
+    return group_schedule
 
 
 def get_week_schedule(user_id, week, group):
@@ -425,8 +409,8 @@ def get_week_schedule(user_id, week, group):
                 j, o = k['lesson'], k['time']
                 try:
                     rez += f"<b>{number_of_lesson(o['start'])} (<code>{j['classRoom']}</code>" \
-                           f"{get_time_ico(o['start'])}{o['start']} - {o['end']})</b>\n{j['name']} " \
-                           f"({j['type']})\n{get_teacher_ico(j['teacher'])} {j['teacher']}\n\n"
+                           f"{get_time_icon(o['start'])}{o['start']} - {o['end']})</b>\n{j['name']} " \
+                           f"({j['type']})\n{get_teacher_icon(j['teacher'])} {j['teacher']}\n\n"
                 except TypeError:
                     pass
                 except Exception as er:
@@ -483,9 +467,9 @@ def handler_text(message):
                 return
             if "today" in message.text.lower() or commands[0] in message.text.lower():
                 try:
-                    schedule = get_schedule("today", group, "<b>Пары сегодня:\n</b>")
-                    if len(schedule) > 50:
-                        bot.send_message(user_id, schedule, parse_mode="HTML")
+                    group_schedule = get_schedule("today", group, "<b>Пары сегодня:\n</b>")
+                    if len(group_schedule) > 50:
+                        bot.send_message(user_id, group_schedule, parse_mode="HTML")
                     else:
                         bot.send_message(user_id, f"{sm}<b>Пар не обнаружено</b>", parse_mode="HTML")
                 except Exception as er:
@@ -497,9 +481,9 @@ def handler_text(message):
                     error_log(er)
             elif "tomorrow" in message.text.lower() or commands[1] in message.text.lower():
                 try:
-                    schedule = get_schedule("tomorrow", group, "<b>Пары завтра:\n</b>")
-                    if len(schedule) > 50:
-                        bot.send_message(user_id, schedule, parse_mode="HTML")
+                    group_schedule = get_schedule("tomorrow", group, "<b>Пары завтра:\n</b>")
+                    if len(group_schedule) > 50:
+                        bot.send_message(user_id, group_schedule, parse_mode="HTML")
                     else:
                         bot.send_message(user_id, f"{sm}<b>Пар не обнаружено</b>", parse_mode="HTML")
                 except Exception as er:
