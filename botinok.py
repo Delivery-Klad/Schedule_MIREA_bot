@@ -529,7 +529,8 @@ def handler_text(message):
                 return
             if pic is not None:
                 try:
-                    bot.send_photo(user_id, text, f"maps/{pic}.png")
+                    with open(f"maps/{pic}.png", "rb") as photo:
+                        bot.send_photo(chat_id=user_id, caption=text, photo=photo)
                     return
                 except FileNotFoundError:
                     bot.send_message(user_id, f"{sm}Аудитория не найдена на схемах")
