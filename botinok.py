@@ -10,6 +10,8 @@ import schedule
 from threading import Thread
 from datetime import datetime, timedelta
 
+from methods import find_classroom
+
 
 def validator():
     if os.environ.get('TOKEN') is None:
@@ -270,11 +272,6 @@ def cache():
                     json.dump(lessons, file)
                 time.sleep(0.1)
         bot.send_message(admins_list[0], f"Caching success! \n{failed}/{len(local_groups)} failed")
-        try:
-            with open("cache/ИКБО-08-18.json", "rb") as doc:
-                bot.send_document(admins_list[0], doc)
-        except Exception as er:
-            error_log(er)
     except Exception as er:
         error_log(er)
     if failed == len(local_groups):
@@ -438,9 +435,11 @@ def handler_text(message):
                 bot.send_message(message.from_user.id, f"{sm}НАПИШИТЕ ВАШУ ГРУППУ")
                 return
             set_group(message, message.from_user.id, message.text.upper())
-        elif message.text[0] == "/" or message.text.lower() in commands:
+            return
+        message_text = find_classroom.find_match(message.text)
+        user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
+        if message_text[0] == "/" or message_text in commands:
             day = datetime.today().weekday()
-            user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
             text = "/group" if message.chat.type == "private" else "/group (группа)"
             try:
                 connect, cursor = db_connect()
@@ -465,7 +464,7 @@ def handler_text(message):
                 except Exception as err:
                     error_log(err)
                 return
-            if "today" in message.text.lower() or commands[0] in message.text.lower():
+            if "today" in message_text.lower() or commands[0] in message_text.lower():
                 try:
                     group_schedule = get_schedule("today", group, "<b>Пары сегодня:\n</b>")
                     if len(group_schedule) > 50:
@@ -479,7 +478,7 @@ def handler_text(message):
                                                                       "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
-            elif "tomorrow" in message.text.lower() or commands[1] in message.text.lower():
+            elif "tomorrow" in message_text.lower() or commands[1] in message_text.lower():
                 try:
                     group_schedule = get_schedule("tomorrow", group, "<b>Пары завтра:\n</b>")
                     if len(group_schedule) > 50:
@@ -493,7 +492,7 @@ def handler_text(message):
                                                                       "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
-            elif "next_week" in message.text.lower():
+            elif "next_week" in message_text.lower():
                 try:
                     get_week_schedule(user_id, "next_week", group)
                 except Exception as er:
@@ -503,9 +502,9 @@ def handler_text(message):
                                                                       "текущую неделю"
                         bot.send_message(user_id, f"{sm}<b>{text}</b>", parse_mode="HTML")
                     error_log(er)
-            elif "weeknum" in message.text.lower():
+            elif "weeknum" in message_text.lower():
                 try:
-                    week = int(message.text.split()[1])
+                    week = int(message_text.split()[1])
                     get_week_schedule(user_id, f"{week}/week_num", group)
                 except Exception as er:
                     if "line 1 column 1" in str(er):
@@ -516,13 +515,28 @@ def handler_text(message):
                     else:
                         bot.send_message(user_id, f"{sm}<b>Неверный ввод</b>", parse_mode="HTML")
                     error_log(er)
-            elif "week" in message.text.lower() or commands[2] in message.text.lower():
+            elif "week" in message_text.lower() or commands[2] in message_text.lower():
                 try:
                     get_week_schedule(user_id, "week", group)
                 except Exception as er:
                     error_log(er)
-        elif "week" in message.text.lower() or "неделя" in message.text.lower():
+        elif "week" in message_text.lower() or "неделя" in message_text.lower():
             get_week(message)
+        elif len(message_text) < 8:
+            text, pic = find_classroom.find_classroom(message)
+            if text is None and pic is None:
+                bot.send_message(user_id, f"{sm}Я вас не понял")
+                return
+            if pic is not None:
+                try:
+                    bot.send_photo(user_id, text, f"maps/{pic}.png")
+                    return
+                except FileNotFoundError:
+                    bot.send_message(user_id, f"{sm}Аудитория не найдена на схемах")
+                    return
+            else:
+                bot.send_message(user_id, f"{sm}Аудитория не найдена на схемах")
+                return
         else:
             if message.chat.type == "private":
                 bot.send_message(message.from_user.id, f"{sm}<b>Я вас не понял</b>", parse_mode="HTML")
