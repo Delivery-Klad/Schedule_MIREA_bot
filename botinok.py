@@ -523,7 +523,7 @@ def handler_text(message):
         elif "week" in message_text.lower() or "неделя" in message_text.lower():
             get_week(message)
         elif len(message_text) < 8:
-            text, pic = find_classroom.find_classroom(message)
+            text, pic = find_classroom.find_classroom(message_text)
             if text is None and pic is None:
                 bot.send_message(user_id, f"{sm}Я вас не понял")
                 return
