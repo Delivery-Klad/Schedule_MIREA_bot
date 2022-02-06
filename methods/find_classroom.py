@@ -1,10 +1,12 @@
 import difflib
 
+from methods import variables
+
 
 def find_match(word: str):
     best_match = 0.0
     result = ""
-    for element in ["сегодня", "завтра", "на неделю"]:
+    for element in variables.commands:
         matcher = difflib.SequenceMatcher(None, word.lower(), element)
         if matcher.ratio() > best_match:
             best_match = matcher.ratio()
@@ -58,7 +60,7 @@ def find_classroom(classroom: str):
         classroom = classroom.replace("-", " ")
         temp = classroom.split(" ")
         if len(temp) > 1:
-            if temp[0].lower() in ["а", "б", "в", "г", "д", "и", "ивц"]:
+            if temp[0].lower() in variables.parts:
                 name, number = temp[0].lower(), int(temp[1])
             else:
                 return None, None
