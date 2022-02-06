@@ -136,6 +136,7 @@ def handler_group(message):
 
 def cache():
     print("Caching schedule...")
+    week_num = requests.get(f"{api_host}current_week/").json()
     failed, local_groups = 0, 0
     try:
         os.mkdir("cache")
@@ -148,7 +149,7 @@ def cache():
         cursor.execute("SELECT DISTINCT grp FROM users")
         local_groups = cursor.fetchall()
         for i in local_groups:
-            res = requests.get(f"https://schedule-rtu.rtuitlab.dev/api/schedule/{i[0]}/week")
+            res = requests.get(f"{api_host}lesson/?group={i[0]}&specific_week={week_num}")
             if res.status_code != 200:
                 failed += 1
                 print(f"Caching failed {res} Group '{i[0]}'")
