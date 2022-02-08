@@ -36,7 +36,7 @@ def handler_start(message):
     user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
     print(f"{user_id} {message.from_user.username} {message.text}")
     try:
-        text = f"<b>{sm}Доступные команды:\n" \
+        text = f"<b>{sm}Доступные команды:\n</b>" \
                f"/group (+группа если бот в беседе)- установить/изменить группу\n" \
                f"/today - расписание на сегодня\n" \
                f"/tomorrow - расписание на завтра\n" \
