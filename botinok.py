@@ -41,7 +41,10 @@ def handler_start(message):
                f"/today - расписание на сегодня\n" \
                f"/tomorrow - расписание на завтра\n" \
                f"/week - расписание на неделю\n" \
-               f"/next_week - расписание на следующую неделю"
+               f"/next_week - расписание на следующую неделю\n" \
+               f"/which_week - узнать номер недели\n" \
+               f"Для поиска аудитории напишите ее номер в чат\n" \
+               f"Для поиска преподавателя напишите его имя в формате Фамилия И.О."
         if message.chat.type == "private":
             sender.send_message(message.from_user.id, text, keyboard=True)
         else:
@@ -160,8 +163,8 @@ def handler_text(message):
                 group = funcs.get_group(user_id)
                 if group:
                     try:
-                        message = "<b>------------------------</b>\n".join(funcs.get_week_schedule(user_id,
-                                                                                                   "next_week", group))
+                        message = "<b>------------------------</b>\n".join(funcs.get_week_schedule(user_id, "next_week",
+                                                                                                   group, None))
                         if len(message) > 50:
                             sender.send_message(user_id, message)
                         else:
@@ -173,8 +176,8 @@ def handler_text(message):
                 group = funcs.get_group(user_id)
                 if group:
                     try:
-                        message = "<b>------------------------</b>\n".join(funcs.get_week_schedule(user_id,
-                                                                                                   "week", group))
+                        message = "<b>------------------------</b>\n".join(funcs.get_week_schedule(user_id, "week",
+                                                                                                   group, None))
                         if len(message) > 50:
                             sender.send_message(user_id, message)
                         else:
@@ -200,8 +203,19 @@ def handler_text(message):
                 sender.send_message(user_id, f"{sm}Аудитория не найдена на схемах")
                 return
         else:
-            if message.chat.type == "private":
-                sender.send_message(message.from_user.id, f"{sm}<b>Я вас не понял</b>")
+            teacher = message_text[0].upper()
+            teacher += message_text[1:]
+            temp = teacher.split()[1]
+            teacher = teacher.split()[0] + f" {temp.upper()}"
+            local_schedule = funcs.get_week_schedule(user_id, "week", None, teacher)
+            if not local_schedule:
+                sender.send_message(user_id, f"{sm}Пар не обнаружено")
+                return
+            message = "------------------------\n".join(local_schedule)
+            if len(message) > 50:
+                sender.send_message(user_id, message)
+            else:
+                sender.send_message(user_id, f"{sm}Пар не обнаружено")
     except Exception as er:
         error_log(er)
 
