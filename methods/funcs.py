@@ -135,14 +135,14 @@ def get_schedule(user_id, day, group, title):
     if day_num == 6:
         return ""
     temp = []
-    for i in get_week_schedule(user_id, week, group, None):
+    for i in get_week_schedule(user_id, week, group, None, None):
         if i.split("\n")[0] == day_dict[day_num + 1]:
             temp = i.split("\n")
             temp.pop(0)
     return title + "\n".join(temp)
 
 
-def get_week_schedule(user_id, week, group, teacher):
+def get_week_schedule(user_id, week, group, teacher, room):
     week_num = requests.get(f"{api_host}current_week/").json()
     if week == "next_week":
         week_num = 2 if week_num == 1 else 1
@@ -209,6 +209,7 @@ def get_week_schedule(user_id, week, group, teacher):
             error_log(er)
     messages.append(message)
     return messages
+
 
 def cache():
     print("Caching schedule...")

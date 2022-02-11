@@ -43,6 +43,7 @@ def handler_start(message):
                f"/week - расписание на неделю\n" \
                f"/next_week - расписание на следующую неделю\n" \
                f"/which_week - узнать номер недели\n" \
+               f"/room (+номер аудитории) - узнать расписание аудитории\n" \
                f"Для поиска аудитории напишите ее номер в чат\n" \
                f"Для поиска преподавателя напишите его имя в формате Фамилия И.О."
         if message.chat.type == "private":
@@ -164,7 +165,7 @@ def handler_text(message):
                 if group:
                     try:
                         message = "<b>------------------------</b>\n".join(funcs.get_week_schedule(user_id, "next_week",
-                                                                                                   group, None))
+                                                                                                   group, None, None))
                         if len(message) > 50:
                             sender.send_message(user_id, message)
                         else:
@@ -177,7 +178,7 @@ def handler_text(message):
                 if group:
                     try:
                         message = "<b>------------------------</b>\n".join(funcs.get_week_schedule(user_id, "week",
-                                                                                                   group, None))
+                                                                                                   group, None, None))
                         if len(message) > 50:
                             sender.send_message(user_id, message)
                         else:
@@ -185,6 +186,21 @@ def handler_text(message):
                     except Exception as er:
                         sender.send_message(user_id, f"{sm}<b>Ooops, ошибо4ка</b>, попробуйте позже")
                         error_log(er)
+            elif "room" in message_text.lower():
+                try:
+                    number = message_text.split()[1]
+                except IndexError:
+                    sender.send_message(user_id, f"{sm}Не указан номер аудитории")
+                    return
+                local_schedule = funcs.get_week_schedule(user_id, "week", None, None, number)
+                if not local_schedule:
+                    sender.send_message(user_id, f"{sm}Пар не обнаружено")
+                    return
+                message = "------------------------\n".join(local_schedule)
+                if len(message) > 50:
+                    sender.send_message(user_id, message)
+                else:
+                    sender.send_message(user_id, f"{sm}Пар не обнаружено")
         elif "week" in message_text.lower() or "неделя" in message_text.lower():
             get_week(message)
         elif len(message_text) < 8:
@@ -210,7 +226,7 @@ def handler_text(message):
                 teacher = teacher.split()[0] + f" {temp.upper()}"
             except IndexError:
                 pass
-            local_schedule = funcs.get_week_schedule(user_id, "week", None, teacher)
+            local_schedule = funcs.get_week_schedule(user_id, "week", None, teacher, None)
             if not local_schedule:
                 sender.send_message(user_id, f"{sm}Пар не обнаружено")
                 return
