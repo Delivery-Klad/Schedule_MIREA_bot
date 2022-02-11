@@ -205,8 +205,11 @@ def handler_text(message):
         else:
             teacher = message_text[0].upper()
             teacher += message_text[1:]
-            temp = teacher.split()[1]
-            teacher = teacher.split()[0] + f" {temp.upper()}"
+            try:
+                temp = teacher.split()[1]
+                teacher = teacher.split()[0] + f" {temp.upper()}"
+            except IndexError:
+                pass
             local_schedule = funcs.get_week_schedule(user_id, "week", None, teacher)
             if not local_schedule:
                 sender.send_message(user_id, f"{sm}Пар не обнаружено")
