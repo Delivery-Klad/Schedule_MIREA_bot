@@ -1,4 +1,5 @@
 import os
+from time import sleep
 
 import telebot
 
@@ -16,9 +17,14 @@ def send_doc(user_id, text: str, filename: str):
 
 
 def send_message(user_id, text: str, keyboard=None):
-    if keyboard is not None:
-        user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
-        user_markup.row("сегодня", "завтра", "на неделю")
-        bot.send_message(user_id, text, reply_markup=user_markup, parse_mode="HTML")
-    else:
-        bot.send_message(user_id, text, parse_mode="HTML")
+    try:
+        if keyboard is not None:
+            user_markup = telebot.types.ReplyKeyboardMarkup(True, False)
+            user_markup.row("сегодня", "завтра", "на неделю")
+            bot.send_message(user_id, text, reply_markup=user_markup, parse_mode="HTML")
+        else:
+            bot.send_message(user_id, text, parse_mode="HTML")
+    except Exception as e:
+        if "timeout" in str(e).lower():
+            sleep(5)
+            bot.send_message(user_id, text, parse_mode="HTML")

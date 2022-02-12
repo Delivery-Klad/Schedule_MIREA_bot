@@ -7,7 +7,7 @@ import schedule as schedule_lib
 
 from methods.logger import error_log
 from methods import check_env, find_classroom, variables, funcs, sender
-from methods.connect import db_connect, create_tables
+from methods.connect import create_tables
 
 check_env.validator()
 bot = telebot.TeleBot(str(os.environ.get('TOKEN')))
@@ -34,28 +34,7 @@ def get_week(message):
 @bot.message_handler(commands=['start'])
 def handler_start(message):
     user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
-    print(f"{user_id} {message.from_user.username} {message.text}")
-    try:
-        text = f"<b>{sm}Доступные команды:\n</b>" \
-               f"/group (+группа если бот в беседе)- установить/изменить группу\n" \
-               f"/today - расписание на сегодня\n" \
-               f"/tomorrow - расписание на завтра\n" \
-               f"/week - расписание на неделю\n" \
-               f"/next_week - расписание на следующую неделю\n" \
-               f"/which_week - узнать номер недели\n" \
-               f"/room (+номер аудитории) - узнать расписание аудитории\n" \
-               f"Для поиска аудитории напишите ее номер в чат\n" \
-               f"Для поиска преподавателя напишите его имя в формате Фамилия И.О."
-        if message.chat.type == "private":
-            sender.send_message(message.from_user.id, text, keyboard=True)
-        else:
-            sender.send_message(message.chat.id, text)
-    except Exception as er:
-        error_log(er)
-        try:
-            sender.send_message(user_id, f"{sm}А ой, ошиб04ка")
-        except Exception as err:
-            error_log(err)
+    funcs.start(message)
 
 
 @bot.message_handler(commands=['group'])
@@ -67,7 +46,9 @@ def handler_group(message):
             if message.from_user.id not in group_list:
                 try:
                     group = message.text.split(" ", 1)[1]
-                    set_group(message, message.from_user.id, group.upper())
+                    data = funcs.create_class(message.from_user.username, message.from_user.first_name,
+                                              message.from_user.last_name, group, message.from_user.id)
+                    funcs.set_group(data)
                     return
                 except IndexError:
                     group_list.append(message.from_user.id)
@@ -75,7 +56,9 @@ def handler_group(message):
         else:
             try:
                 group = message.text.split(" ", 1)[1]
-                set_group(message, message.chat.id, group.upper())
+                data = funcs.create_class(message.from_user.username, message.from_user.first_name,
+                                          message.from_user.last_name, group, message.from_user.id)
+                funcs.set_group(data)
             except IndexError:
                 sender.send_message(message.chat.id, f"{sm}/group (группа)")
     except Exception as er:
@@ -84,38 +67,6 @@ def handler_group(message):
             sender.send_message(user_id, f"{sm}А ой, ошиб04ка")
         except Exception as err:
             error_log(err)
-
-
-def set_group(message, user_id, group):
-    try:
-        if not funcs.validate_group(group):
-            sender.send_message(user_id, f"{sm}Неверный формат группы")
-            return
-        connect, cursor = db_connect()
-        if connect is None or cursor is None:
-            sender.send_message(user_id, f"{sm}Я потерял БД, кто найдет оставьте на охране и повторите попытку позже")
-            return
-        cursor.execute(f"SELECT count(ids) FROM users WHERE ids={user_id}")
-        res = cursor.fetchall()[0][0]
-        if res == 0:
-            cursor.execute(
-                f"INSERT INTO users VALUES($taG${message.from_user.username}$taG$,"
-                f"$taG${message.from_user.first_name}$taG$, $taG${message.from_user.last_name}$taG$, "
-                f"$taG${group}$taG$, {user_id})")
-        else:
-            cursor.execute(f"UPDATE users SET grp=$taG${group}$taG$ WHERE ids={user_id}")
-        connect.commit()
-        cursor.close()
-        connect.close()
-        sender.send_message(user_id, f"{sm}Я вас запомнил")
-        try:
-            group_list.pop(group_list.index(user_id))
-        except Exception as er:
-            if "is not in list" not in str(er):
-                error_log(er)
-    except Exception as er:
-        error_log(er)
-        sender.send_message(user_id, f"{sm}А ой, ошиб04ка")
 
 
 @bot.message_handler(content_types=['text'])
@@ -127,7 +78,9 @@ def handler_text(message):
             if "/" in message.text or message.text in variables.commands:
                 sender.send_message(message.from_user.id, f"{sm}НАПИШИТЕ ВАШУ ГРУППУ")
                 return
-            set_group(message, message.from_user.id, message.text.upper())
+            data = funcs.create_class(message.from_user.username, message.from_user.first_name,
+                                      message.from_user.last_name, group, message.from_user.id)
+            funcs.set_group(data)
             return
         message_text = find_classroom.find_match(message.text)
         user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
@@ -196,7 +149,7 @@ def handler_text(message):
                 if not local_schedule:
                     sender.send_message(user_id, f"{sm}Пар не обнаружено")
                     return
-                message = "------------------------\n".join(local_schedule)
+                message = "<b>------------------------</b>\n".join(local_schedule)
                 if len(message) > 50:
                     sender.send_message(user_id, message)
                 else:
@@ -230,7 +183,7 @@ def handler_text(message):
             if not local_schedule:
                 sender.send_message(user_id, f"{sm}Пар не обнаружено")
                 return
-            message = "------------------------\n".join(local_schedule)
+            message = "<b>------------------------</b>\n".join(local_schedule)
             if len(message) > 50:
                 sender.send_message(user_id, message)
             else:
