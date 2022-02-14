@@ -168,6 +168,7 @@ def get_group(user_id):
 def set_group(data: UserData):
     try:
         if not validate_group(data.group):
+            error_log(data.group)
             sender.send_message(data.ids, f"{sm}Неверный формат группы")
             return
         connect, cursor = db_connect()

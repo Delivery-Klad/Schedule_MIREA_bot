@@ -79,7 +79,7 @@ def handler_text(message):
                 sender.send_message(message.from_user.id, f"{sm}НАПИШИТЕ ВАШУ ГРУППУ")
                 return
             data = funcs.create_class(message.from_user.username, message.from_user.first_name,
-                                      message.from_user.last_name, message.text, message.from_user.id)
+                                      message.from_user.last_name, message.text.upper(), message.from_user.id)
             if funcs.set_group(data):
                 group_list.pop(group_list.index(data.ids))
             return
