@@ -79,8 +79,9 @@ def handler_text(message):
                 sender.send_message(message.from_user.id, f"{sm}НАПИШИТЕ ВАШУ ГРУППУ")
                 return
             data = funcs.create_class(message.from_user.username, message.from_user.first_name,
-                                      message.from_user.last_name, group, message.from_user.id)
-            funcs.set_group(data)
+                                      message.from_user.last_name, message.text, message.from_user.id)
+            if funcs.set_group(data):
+                group_list.pop(group_list.index(data.ids))
             return
         message_text = find_classroom.find_match(message.text)
         user_id = message.from_user.id if message.chat.type == "private" else message.chat.id
