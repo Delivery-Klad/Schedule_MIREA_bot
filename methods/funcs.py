@@ -51,7 +51,7 @@ def get_time_icon(local_time):
 
 def get_week(user_id):
     try:
-        week = requests.get(f"{api_host}current_week/").json()
+        week = requests.get(f"{api_host}schedule/current_week/").json()
         if social_network == "tg":
             text = f"<b>{week}</b> неделя"
         else:
@@ -213,13 +213,13 @@ def get_schedule(user_id, day, group, title):
 
 
 def get_week_schedule(user_id, week, group, teacher, room):
-    week_num = requests.get(f"{api_host}current_week/").json()
+    week_num = requests.get(f"{api_host}schedule/current_week/").json()
     if week == "next_week":
         week_num = 2 if week_num == 1 else 1
     if group is not None:
-        schedule = requests.get(f"{api_host}lesson/?group={group}&specific_week={week_num}")
+        schedule = requests.get(f"{api_host}schedule/lesson/?group={group}&specific_week={week_num}")
     else:
-        schedule = requests.get(f"{api_host}lesson/?teacher={teacher}&specific_week={week_num}")
+        schedule = requests.get(f"{api_host}schedule/lesson/?teacher={teacher}&specific_week={week_num}")
     try:
         lessons = schedule.json()
     except Exception as er:
@@ -283,7 +283,7 @@ def get_week_schedule(user_id, week, group, teacher, room):
 
 def cache():
     print("Caching schedule...")
-    week_num = requests.get(f"{api_host}current_week/").json()
+    week_num = requests.get(f"{api_host}schedule/current_week/").json()
     failed, local_groups = 0, 0
     try:
         os.mkdir("cache")
@@ -296,7 +296,7 @@ def cache():
         cursor.execute("SELECT DISTINCT grp FROM users")
         local_groups = cursor.fetchall()
         for i in local_groups:
-            res = requests.get(f"{api_host}lesson/?group={i[0]}&specific_week={week_num}")
+            res = requests.get(f"{api_host}schedule/lesson/?group={i[0]}&specific_week={week_num}")
             if res.status_code != 200:
                 failed += 1
                 print(f"Caching failed {res} Group '{i[0]}'")
