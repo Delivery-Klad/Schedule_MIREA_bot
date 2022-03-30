@@ -157,6 +157,14 @@ def handler_text(message):
                     sender.send_message(user_id, f"{sm}Пар не обнаружено")
         elif "week" in message_text.lower() or "неделя" in message_text.lower():
             get_week(message)
+        elif "календарь" in message_text.lower() or "calendar" in message_text.lower():
+            group = funcs.get_group(user_id)
+            if group:
+                try:
+                    funcs.get_calendar(group, user_id)
+                except Exception as er:
+                    sender.send_message(user_id, f"{sm}<b>Ooops, ошибо4ка</b>, попробуйте позже")
+                    error_log(er)
         elif len(message_text) < 8:
             text, pic = find_classroom.find_classroom(message_text)
             if text is None and pic is None:
