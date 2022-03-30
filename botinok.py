@@ -140,6 +140,14 @@ def handler_text(message):
                     except Exception as er:
                         sender.send_message(user_id, f"{sm}<b>Ooops, ошибо4ка</b>, попробуйте позже")
                         error_log(er)
+            elif "calendar" in message_text.lower():
+                group = funcs.get_group(user_id)
+                if group:
+                    try:
+                        funcs.get_calendar(group, user_id)
+                    except Exception as er:
+                        sender.send_message(user_id, f"{sm}<b>Ooops, ошибо4ка</b>, попробуйте позже")
+                        error_log(er)
             elif "room" in message_text.lower():
                 try:
                     number = message_text.split()[1]
